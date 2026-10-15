@@ -99,7 +99,7 @@ async function syncCurrentWeight() {
 /* ---------------- Sessions ---------------- */
 
 const SESSION_SELECT =
-  'id,workout_date,notes,session_muscle_groups(muscle_group_id),' +
+  'id,workout_date,notes,duration_minutes,calories,session_muscle_groups(muscle_group_id),' +
   'workout_exercises(id,session_id,exercise_id,exercise_order,notes,exercise_sets(id,set_number,weight_kg,reps))';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,6 +108,8 @@ function mapSession(r: any): Session {
     id: r.id,
     workout_date: r.workout_date,
     notes: r.notes,
+    duration_minutes: r.duration_minutes ?? null,
+    calories: r.calories ?? null,
     groups: (r.session_muscle_groups || []).map((g: { muscle_group_id: number }) => g.muscle_group_id).sort(),
     exercises: (r.workout_exercises || [])
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -168,7 +170,9 @@ export async function setSessionGroups(sessionId: number, groups: number[]): Pro
   }
 }
 
-export async function updateSession(sessionId: number, patch: { workout_date?: string; notes?: string | null }) {
+export async function updateSession(sessionId: number, patch: {
+  workout_date?: string; notes?: string | null; duration_minutes?: number | null; calories?: number | null;
+}) {
   check(await supabase.from('workout_sessions').update(patch).eq('id', sessionId));
 }
 

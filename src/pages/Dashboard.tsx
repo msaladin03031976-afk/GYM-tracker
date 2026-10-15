@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { entriesFromSessions, getBodyWeights, getExercises, getMuscleGroups, getProfile, listSessions } from '../lib/api';
 import { fmtDate, fmtLong, startOfWeek, toISO, todayISO } from '../lib/dates';
-import { entryStats, fmtNum, fmtPct, pctChange, prEvents } from '../lib/stats';
+import { entryStats, fmtDuration, fmtNum, fmtPct, pctChange, prEvents } from '../lib/stats';
 import type { BodyMeasurement, Exercise, MuscleGroup, Profile, Session } from '../types';
 import Spinner from '../components/Spinner';
 import TrendChart from '../components/TrendChart';
@@ -45,7 +45,9 @@ export default function Dashboard() {
     }
     prs.sort((a, b) => (a.date < b.date ? 1 : -1));
     trends.sort((a, b) => (a.date < b.date ? 1 : -1));
-    return { todays, lastDate, total: past.length, thisWeek: thisWeek.length, groupsThisWeek, prs: prs.slice(0, 4), trends: trends.slice(0, 4), exName };
+    const weekMinutes = thisWeek.reduce((t, s) => t + (s.duration_minutes || 0), 0);
+    const weekCalories = thisWeek.reduce((t, s) => t + (s.calories || 0), 0);
+    return { todays, lastDate, total: past.length, thisWeek: thisWeek.length, groupsThisWeek, weekMinutes, weekCalories, prs: prs.slice(0, 4), trends: trends.slice(0, 4), exName };
   }, [data]);
 
   if (error) return <div className="page"><div className="error">{error}</div></div>;
@@ -82,6 +84,11 @@ export default function Dashboard() {
         <div className="card stat"><div className="label">Total</div><div className="value">{view.total}</div></div>
         <div className="card stat"><div className="label">This week</div><div className="value">{view.thisWeek}</div></div>
         <div className="card stat"><div className="label">Last</div><div className="value" style={{ fontSize: 16, marginTop: 10 }}>{view.lastDate ? fmtDate(view.lastDate, { day: 'numeric', month: 'short' }) : '—'}</div></div>
+      </div>
+
+      <div className="grid2" style={{ marginTop: 8 }}>
+        <div className="card stat"><div className="label">Time this week</div><div className="value" style={{ fontSize: 20 }}>{fmtDuration(view.weekMinutes)}</div></div>
+        <div className="card stat"><div className="label">Calories this week</div><div className="value" style={{ fontSize: 20 }}>{view.weekCalories ? <>{fmtNum(view.weekCalories)} <small>kcal</small></> : '—'}</div></div>
       </div>
 
       <h2>Muscle groups this week</h2>

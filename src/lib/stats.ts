@@ -58,6 +58,13 @@ export function fmtPct(p: number | null): string {
   return `${s}${p.toFixed(1)}%`;
 }
 
+/** 75 → "1 h 15 min", 40 → "40 min" */
+export function fmtDuration(min: number | null | undefined): string {
+  if (!min) return '—';
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`;
+}
+
 export function fmtSets(sets: SetRow[]): string {
   return sets.map((s) => `${fmtNum(s.weight_kg)}×${s.reps}`).join('  ·  ');
 }

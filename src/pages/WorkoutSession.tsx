@@ -4,7 +4,7 @@ import {
   deleteSession, getExerciseHistory, getExercises, getMuscleGroups, getSession, removeWorkoutExercise, setSessionGroups, updateSession,
 } from '../lib/api';
 import { fmtDate, fmtLong, parseISO, todayISO } from '../lib/dates';
-import { entryStats, fmtNum, fmtPct, fmtSets, pctChange } from '../lib/stats';
+import { entryStats, fmtDuration, fmtNum, fmtPct, fmtSets, pctChange } from '../lib/stats';
 import type { Exercise, ExerciseEntry, MuscleGroup, Session } from '../types';
 import Spinner from '../components/Spinner';
 import TopBar from '../components/TopBar';
@@ -19,11 +19,20 @@ export default function WorkoutSession() {
   const [prev, setPrev] = useState<Map<number, ExerciseEntry | null>>(new Map());
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
+  const [hours, setHours] = useState('');
+  const [mins, setMins] = useState('');
+  const [kcal, setKcal] = useState('');
+  const [finishing, setFinishing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const [s, g, ex] = await Promise.all([getSession(id), getMuscleGroups(), getExercises()]);
       setSession(s); setGroups(g); setExercises(ex);
+      if (s.duration_minutes) {
+        setHours(s.duration_minutes >= 60 ? String(Math.floor(s.duration_minutes / 60)) : '');
+        setMins(String(s.duration_minutes % 60));
+      }
+      if (s.calories) setKcal(String(s.calories));
       // previous performance of each exercise, for comparison
       const m = new Map<number, ExerciseEntry | null>();
       await Promise.all(s.exercises.map(async (we) => {
@@ -64,6 +73,19 @@ export default function WorkoutSession() {
     load();
   }
 
+  async function finish() {
+    const total = (parseInt(hours) || 0) * 60 + (parseInt(mins) || 0);
+    const cal = parseInt(kcal) || 0;
+    setFinishing(true);
+    try {
+      await updateSession(id, { duration_minutes: total || null, calories: cal || null });
+      nav('/', { replace: true });
+    } catch (e) {
+      setError((e as Error).message);
+      setFinishing(false);
+    }
+  }
+
   async function removeSession() {
     if (!confirm('Delete this whole workout? This cannot be undone.')) return;
     await deleteSession(id).catch((e) => setError(e.message));
@@ -98,6 +120,8 @@ export default function WorkoutSession() {
       <div className="grid2" style={{ marginTop: 14 }}>
         <div className="card stat"><div className="label">Sets</div><div className="value">{totalSets}</div></div>
         <div className="card stat"><div className="label">Volume</div><div className="value">{fmtNum(totalVolume)} <small>kg</small></div></div>
+        <div className="card stat"><div className="label">Time</div><div className="value" style={{ fontSize: 20 }}>{fmtDuration(session.duration_minutes)}</div></div>
+        <div className="card stat"><div className="label">Calories</div><div className="value">{session.calories ? <>{fmtNum(session.calories)} <small>kcal</small></> : '—'}</div></div>
       </div>
 
       <h2>Exercises</h2>
@@ -135,7 +159,24 @@ export default function WorkoutSession() {
       })}
 
       <Link to={`/workout/${id}/add`} className="btn primary block" style={{ marginTop: 14 }}>+ Add exercise</Link>
-      <Link to="/" className="btn ghost block" style={{ marginTop: 10 }}>Finish workout</Link>
+      <h2>Finish workout</h2>
+      <div className="card">
+        <span className="small muted">Total time spent</span>
+        <div className="grid2" style={{ marginTop: 6 }}>
+          <label className="field" style={{ marginBottom: 8 }}><span>Hours</span>
+            <input type="number" inputMode="numeric" min="0" max="23" placeholder="0" value={hours} onChange={(e) => setHours(e.target.value)} />
+          </label>
+          <label className="field" style={{ marginBottom: 8 }}><span>Minutes</span>
+            <input type="number" inputMode="numeric" min="0" max="59" placeholder="0" value={mins} onChange={(e) => setMins(e.target.value)} />
+          </label>
+        </div>
+        <label className="field"><span>Total calories burned (kcal)</span>
+          <input type="number" inputMode="numeric" min="0" placeholder="e.g. 450" value={kcal} onChange={(e) => setKcal(e.target.value)} />
+        </label>
+        <button className="btn primary block" disabled={finishing} onClick={finish}>
+          {finishing ? 'Saving…' : 'Save & finish workout'}
+        </button>
+      </div>
     </div>
   );
 }

@@ -44,6 +44,8 @@ export interface Session {
   id: number;
   workout_date: string; // YYYY-MM-DD
   notes: string | null;
+  duration_minutes: number | null;
+  calories: number | null;
   groups: number[];
   exercises: WorkoutExercise[];
 }

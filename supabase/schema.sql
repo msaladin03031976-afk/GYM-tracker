@@ -53,6 +53,11 @@ create table if not exists public.workout_sessions (
   notes        text,
   created_at   timestamptz not null default now()
 );
+-- Entered by the user when finishing a workout
+alter table public.workout_sessions
+  add column if not exists duration_minutes integer check (duration_minutes >= 0 and duration_minutes <= 1440),
+  add column if not exists calories integer check (calories >= 0 and calories <= 20000);
+
 create index if not exists workout_sessions_user_date_idx
   on public.workout_sessions (user_id, workout_date desc);
 

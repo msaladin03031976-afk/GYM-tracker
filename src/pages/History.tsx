@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getExercises, getMuscleGroups, listSessions } from '../lib/api';
 import { WEEK_STARTS_ON, addDays, fmtLong, parseISO, startOfWeek, toISO, todayISO } from '../lib/dates';
-import { entryStats, fmtNum } from '../lib/stats';
+import { entryStats, fmtDuration, fmtNum } from '../lib/stats';
 import type { Exercise, MuscleGroup, Session } from '../types';
 import Spinner from '../components/Spinner';
 
@@ -102,6 +102,8 @@ export default function History() {
             </div>
             <div className="chips" style={{ marginTop: 6 }}>
               {s.groups.map((g) => <span key={g} className="tag">{groups.find((x) => x.id === g)?.name}</span>)}
+              {s.duration_minutes ? <span className="tag">⏱ {fmtDuration(s.duration_minutes)}</span> : null}
+              {s.calories ? <span className="tag">🔥 {fmtNum(s.calories)} kcal</span> : null}
             </div>
             <div className="small" style={{ marginTop: 8 }}>
               {s.exercises.map((we) => (
